@@ -50,15 +50,16 @@ export const PASSIVES=Object.freeze({
 });
 const starHp=[1,1.65,2.6],starPower=[1,1.45,2];
 const gearValueFrom=(loadout,effect)=>Object.values(loadout||{}).reduce((sum,id)=>sum+(GEAR[id]?.effects?.[effect]??(GEAR[id]?.effect===effect?GEAR[id].value:0)),0);
+const forgeValue=(card,effect)=>card?.forge?.effects?.[effect]??0;
 export function combatStats(run,cardId,stars=1,level=run?.level||1,loadout={}){
   const c=cardOf(run,cardId),base=KIND_STATS[c?.kind]||KIND_STATS.turtle,s=Math.max(1,Math.min(3,stars||1)),lvl=Math.max(1,Math.min(maxShopLevel,level||1)),mutation=c?.mutation&&MUTATIONS[c.mutation];
-  const healthBonus=gearValueFrom(loadout,'health')+(mutation?.effect==='health'?mutation.value:0),powerBonus=gearValueFrom(loadout,'power')+(mutation?.effect==='power'?mutation.value:0)+(c?.passive==='power'?.15:0)+(c?.mutation==='ember'?.1:0);
-  const haste=gearValueFrom(loadout,'haste')+(mutation?.effect==='haste'?mutation.value:0)+(c?.passive==='quickcast'?.15:0);
-  const taunt=gearValueFrom(loadout,'taunt')>0||c?.passive==='taunt';
+  const healthBonus=gearValueFrom(loadout,'health')+forgeValue(c,'health')+(mutation?.effect==='health'?mutation.value:0),powerBonus=gearValueFrom(loadout,'power')+forgeValue(c,'power')+(mutation?.effect==='power'?mutation.value:0)+(c?.passive==='power'?.15:0)+(c?.mutation==='ember'?.1:0);
+  const haste=gearValueFrom(loadout,'haste')+forgeValue(c,'haste')+(mutation?.effect==='haste'?mutation.value:0)+(c?.passive==='quickcast'?.15:0);
+  const taunt=gearValueFrom(loadout,'taunt')>0||forgeValue(c,'taunt')>0||c?.passive==='taunt';
   const hp=Math.round(base.hp*starHp[s-1]*(1+.08*(lvl-1))+healthBonus),attack=c?.passive==='pacifist'?0:Math.round((c?.passive==='sniper'?34:base.attack)*starPower[s-1]*(1+powerBonus));
   const skillCd=Number((base.skillCd*Math.max(.45,1-haste)).toFixed(1)),skillDamage=c?.kind==='wolf'?Math.round((s===3?50:34)*(1+powerBonus)):c?.kind==='bird'?Math.round((c?.passive==='sniper'?(s===3?62:42):(26+(s===3?12:0)))*(1+powerBonus)):0;
   const skillEffect=c?.passive==='pacifist'?`不释放主动；每 3 秒治疗最低血队友 12`:c?.passive==='team_heal'?`全队治疗 ${s===3?34:24}，低血队友护盾 1.5 秒`:c?.passive==='summoner'?`召唤 ${s===3?2:1} 只幼魇参战`:c?.passive==='chain'?`雷击 ${Math.round((s===3?42:30)*(1+powerBonus))}，弹射最多 2 个目标`:c?.kind==='turtle'?`全队护盾 ${s===3?3:2} 秒，减伤 75%${cardId==='ice_turtle'?'，冻结敌人 1 秒':''}`:c?.kind==='wolf'?`冲撞 ${skillDamage} 伤害，眩晕 1.3 秒`:c?.passive==='sniper'?`单体狙击 ${skillDamage} 伤害`:`群伤 ${skillDamage}，半径 ${s===3?185:125}`;
-  return {role:base.role,range:base.range,hp,attack,attackCd:base.attackCd,move:base.move,skillCd,skillDamage,skillEffect,taunt,passive:c?.passive?PASSIVES[c.passive]:''};
+  return {role:base.role,range:base.range,hp,attack,attackCd:base.attackCd,move:base.move,skillCd,skillDamage,skillEffect:c?.forge?.text?`${skillEffect}｜铸灵：${c.forge.text}`:skillEffect,taunt,passive:c?.passive?PASSIVES[c.passive]:'',forge:c?.forge?.text||''};
 }
 
 export const MUTATIONS=Object.freeze({
@@ -184,11 +185,11 @@ function hatchInto(n,tier=2){const base=kinds[Math.floor(random(n)*kinds.length)
 function hatchReady(n){const ready=[],later=[];for(const egg of n.pendingEggs||[])(egg.readyRound<=n.round?ready:later).push(egg);n.pendingEggs=later;return ready.map(egg=>hatchInto(n,egg.tier));}
 
 const forgeProfiles=Object.freeze({
-  guardian:{name:'守卫',kind:'turtle',race:'spirit',element:'water',mutation:'scale',passive:'taunt',prefix:'玄',suffix:'铸'},
-  archer:{name:'射手',kind:'bird',race:'feather',element:'fire',mutation:'wing',passive:'sniper',prefix:'焰',suffix:'羽'},
-  healer:{name:'治疗',kind:'turtle',race:'spirit',element:'spirit',mutation:'moon',passive:'team_heal',prefix:'月',suffix:'灵'},
-  summoner:{name:'召唤',kind:'bird',race:'feather',element:'spirit',mutation:'ember',passive:'summoner',prefix:'魂',suffix:'鸦'},
-  assassin:{name:'刺客',kind:'wolf',race:'beast',element:'fire',mutation:'horn',passive:'leech',prefix:'赤',suffix:'魇'},
+  guardian:{name:'守卫',kind:'turtle',race:'spirit',element:'water',mutation:'scale',passive:'taunt',prefix:'玄',suffix:'铸',forge:{name:'山铠',effects:{health:70,taunt:1},text:'生命 +70，嘲讽范围更稳定'}},
+  archer:{name:'射手',kind:'bird',race:'feather',element:'fire',mutation:'wing',passive:'sniper',prefix:'焰',suffix:'羽',forge:{name:'穿羽',effects:{power:.16,haste:.08},text:'伤害 +16%，冷却 -8%'}},
+  healer:{name:'治疗',kind:'turtle',race:'spirit',element:'spirit',mutation:'moon',passive:'team_heal',prefix:'月',suffix:'灵',forge:{name:'月泉',effects:{health:35,haste:.1},text:'生命 +35，群疗更频繁'}},
+  summoner:{name:'召唤',kind:'bird',race:'feather',element:'spirit',mutation:'ember',passive:'summoner',prefix:'魂',suffix:'鸦',forge:{name:'魇巢',effects:{haste:.14,health:25},text:'冷却 -14%，更快召唤幼魇'}},
+  assassin:{name:'刺客',kind:'wolf',race:'beast',element:'fire',mutation:'horn',passive:'leech',prefix:'赤',suffix:'魇',forge:{name:'血牙',effects:{power:.14,health:20},text:'伤害 +14%，生命 +20'}},
 });
 const safeForgeName=(value,profile)=>String(value||`${profile.prefix}${profile.suffix}`).replace(/[<>\/:*?"'|]/g,'').trim().slice(0,8)||`${profile.prefix}${profile.suffix}`;
 export function forgeCreature(s,draft={}){
@@ -196,7 +197,7 @@ export function forgeCreature(s,draft={}){
   const profile=forgeProfiles[draft.role]||forgeProfiles.guardian,n=clone(s),prompt=String(draft.prompt||'').trim().replace(/\s+/g,' ').slice(0,36),link=String(draft.url||'').trim(),mutation=MUTATIONS[profile.mutation],salt=`${n.seed}_${n.round}_${n.mutants.length}_${safeForgeName(draft.name,profile)}`.toLowerCase().replace(/[^a-z0-9_]+/g,'_').slice(0,36)||'forge';
   let id=`mut_forge_${salt}`,i=1;while(n.mutants.some(m=>m.id===id)||Object.hasOwn(n.owned,id))id=`mut_forge_${salt}_${i++}`.slice(0,58);
   const name=safeForgeName(draft.name,profile),sourceUrl=/^https?:\/\//.test(link)?link.slice(0,500):'',source=sourceUrl?' · 已绑定模型链接':'';
-  n.gold-=3;n.mutants=[...(n.mutants||[]),{id,name,kind:profile.kind,race:profile.race,element:profile.element,mutation:profile.mutation,passive:profile.passive,rarity:'rare',cost:3,text:`Meshy铸灵 · ${profile.name} · ${mutation.name}：${mutation.text}${source}`,hue:Math.floor(random(n)*300),...(sourceUrl?{sourceUrl}: {})}];
+  n.gold-=3;n.mutants=[...(n.mutants||[]),{id,name,kind:profile.kind,race:profile.race,element:profile.element,mutation:profile.mutation,passive:profile.passive,forge:profile.forge,rarity:'rare',cost:3,text:`Meshy铸灵 · ${profile.name} · ${profile.forge.name}：${profile.forge.text}${source}`,hue:Math.floor(random(n)*300),...(sourceUrl?{sourceUrl}: {})}];
   n.owned[id]=1;n.message=`${name}已铸成${profile.name}伙伴，进入手牌区，可布阵、装备和出售。${prompt?` 灵感：${prompt}`:''}`.slice(0,500);
   return syncHandOrder(n,s);
 }
@@ -279,7 +280,7 @@ export function restore(raw){
     if(!record(s)||s.version!==1||!int(s.seed,0,4294967295)||!['shop','battle','reward','won','lost'].includes(s.phase)||!int(s.round,1,maxRound)||!int(s.gold,0,250)||!int(s.level,1,maxShopLevel)||!int(s.xp,0,40)||!int(s.lives,0,3)||!int(s.wins,0,maxRound)||typeof s.message!=='string'||s.message.length>500)return null;
     if(s.mutants===undefined)s.mutants=[];if(s.pendingEggs===undefined)s.pendingEggs=[];if(s.handOrder===undefined)s.handOrder=[];
     if(!Array.isArray(s.pendingEggs)||s.pendingEggs.length>12||s.pendingEggs.some(e=>!exactKeys(e,['tier','readyRound'])||!int(e.tier,2,maxShopLevel)||!int(e.readyRound,2,maxRound)))return null;if(!Array.isArray(s.handOrder)||s.handOrder.length>300||s.handOrder.some(k=>typeof k!=='string'||k.length>80))return null;
-    if(!Array.isArray(s.mutants)||s.mutants.length>12||s.mutants.some(m=>!record(m)||typeof m.id!=='string'||!/^mut_[a-z0-9_]+$/.test(m.id)||typeof m.name!=='string'||m.name.length<1||m.name.length>8||!kinds.includes(m.kind)||!Object.hasOwn(RACES,m.race)||!['water','fire','spirit'].includes(m.element)||!Object.hasOwn(MUTATIONS,m.mutation)||(m.passive!==undefined&&!Object.hasOwn(PASSIVES,m.passive))||(m.sourceUrl!==undefined&&(typeof m.sourceUrl!=='string'||m.sourceUrl.length>500||!/^https?:\/\//.test(m.sourceUrl)))||!['common','rare'].includes(m.rarity)||!int(m.cost,3,5)||typeof m.text!=='string'||!int(m.hue,0,300)))return null;
+    if(!Array.isArray(s.mutants)||s.mutants.length>12||s.mutants.some(m=>!record(m)||typeof m.id!=='string'||!/^mut_[a-z0-9_]+$/.test(m.id)||typeof m.name!=='string'||m.name.length<1||m.name.length>8||!kinds.includes(m.kind)||!Object.hasOwn(RACES,m.race)||!['water','fire','spirit'].includes(m.element)||!Object.hasOwn(MUTATIONS,m.mutation)||(m.passive!==undefined&&!Object.hasOwn(PASSIVES,m.passive))||(m.sourceUrl!==undefined&&(typeof m.sourceUrl!=='string'||m.sourceUrl.length>500||!/^https?:\/\//.test(m.sourceUrl)))||(m.forge!==undefined&&(!record(m.forge)||typeof m.forge.name!=='string'||m.forge.name.length<1||m.forge.name.length>8||typeof m.forge.text!=='string'||m.forge.text.length<1||m.forge.text.length>80||!record(m.forge.effects)||Object.entries(m.forge.effects).some(([k,v])=>!['health','power','haste','taunt'].includes(k)||typeof v!=='number'||!Number.isFinite(v)||v<0||v>120)))||!['common','rare'].includes(m.rarity)||!int(m.cost,3,5)||typeof m.text!=='string'||!int(m.hue,0,300)))return null;
     const mutantIds=new Set(s.mutants.map(m=>m.id));if(mutantIds.size!==s.mutants.length)return null;
     if(!record(s.owned)||Object.keys(s.owned).some(id=>!Object.hasOwn(CARDS,id)&&!mutantIds.has(id))||ids.slice(0,6).some(id=>!Object.hasOwn(s.owned,id)))return null;
     for(const id of ids)if(!Object.hasOwn(s.owned,id))s.owned[id]=0;for(const id of mutantIds)if(!Object.hasOwn(s.owned,id))s.owned[id]=0;

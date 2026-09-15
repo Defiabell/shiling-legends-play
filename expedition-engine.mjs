@@ -33,7 +33,7 @@ export function createBattle(run={},enemyVersion=4){
  for(const entry of entries){
   if(seen.has(entry.id))continue;seen.add(entry.id);
   const {kind,cardId,stars,x,y}=entry,u=make('a-'+entry.id,'ally',kind,x,y,1,[]);
-  const info=cardOf(run,cardId);Object.assign(u,{cardId,stars,element:info.element,power:[1,1.45,2][stars-1],mutation:info.mutation||null});
+  const info=cardOf(run,cardId);Object.assign(u,{cardId,stars,element:info.element,power:[1,1.45,2][stars-1],mutation:info.mutation||null,forge:info.forge||null,meshy:Boolean(info.sourceUrl)});
   if(grid){u.slot=entry.slot;s.skills[u.id]=0;}
   u.hp=u.max=Math.round(BASE[kind]*[1,1.65,2.6][stars-1]*(1+.08*(level-1))+(s.relics.includes('vigor')?25:0));s.units.push(u);
  }
@@ -44,7 +44,7 @@ export function createBattle(run={},enemyVersion=4){
    const loadout=run.loadouts?.[u.id.slice(2)]||{};
    u.loadout={};u.passive=cardOf(run,u.cardId)?.passive||null;
    for(const slot of ['weapon','skill'])if(progression.GEAR?.[loadout[slot]]?.type===slot)u.loadout[slot]=loadout[slot];
-   u.hp=u.max=Math.round((u.max+gearValue(u,'health')+mutationValue(u,'health'))*(s.raceSynergies.includes('spirit')?1.1:1));
+   u.hp=u.max=Math.round((u.max+gearValue(u,'health')+forgeValue(u,'health')+mutationValue(u,'health'))*(s.raceSynergies.includes('spirit')?1.1:1));
   }
  }
  for(const element of ['water','fire','spirit'])if(s.units.filter(u=>u.element===element).length>=2)s.synergies.push(element);
@@ -90,15 +90,16 @@ export function deploy(s,id,slot){
  if(slot<0||slot>2)return false;u.y=LANES[slot];return true;
 }
 const gearValue=(u,effect)=>Object.values(u.loadout||{}).reduce((sum,id)=>sum+(progression.GEAR?.[id]?.effects?.[effect]??(progression.GEAR?.[id]?.effect===effect?progression.GEAR[id].value:0)),0);
+const forgeValue=(u,effect)=>u.forge?.effects?.[effect]??0;
 const mutationValue=(u,effect)=>MUTATIONS[u.mutation]?.effect===effect?MUTATIONS[u.mutation].value:0;
-const hasTaunt=u=>u.passive==='taunt'||gearValue(u,'taunt')>0;
+const hasTaunt=u=>u.passive==='taunt'||gearValue(u,'taunt')>0||forgeValue(u,'taunt')>0;
 function tauntTarget(s,u,fs){const taunts=fs.filter(v=>hasTaunt(v)&&dist(u,v)<=360);return taunts.sort((a,b)=>dist(u,a)-dist(u,b)||a.hp/a.max-b.hp/b.max)[0]||null;}
-export function start(s){if(s.phase!=='deploy'||!s.units.some(u=>u.team==='ally'&&alive(u)))return false;s.phase='battle';for(const u of s.units.filter(u=>u.team==='ally')){const ward=Math.max(gearValue(u,'ward'),mutationValue(u,'ward'),u.passive==='ward'?2:0);if(ward>0){u.shield=ward;effect(s,u,'开战护盾','shield');}}if(s.synergies.includes('water'))for(const u of s.units.filter(u=>u.team==='ally')){u.shield=Math.max(u.shield,2);effect(s,u,'水系共鸣 · 水幕','shield');}s.message='异兽将按战术自动交战，观察站位与配合。';return true;}
+export function start(s){if(s.phase!=='deploy'||!s.units.some(u=>u.team==='ally'&&alive(u)))return false;s.phase='battle';for(const u of s.units.filter(u=>u.team==='ally')){const ward=Math.max(gearValue(u,'ward'),forgeValue(u,'ward'),mutationValue(u,'ward'),u.passive==='ward'?2:0);if(ward>0){u.shield=ward;effect(s,u,'开战护盾','shield');}}if(s.synergies.includes('water'))for(const u of s.units.filter(u=>u.team==='ally')){u.shield=Math.max(u.shield,2);effect(s,u,'水系共鸣 · 水幕','shield');}s.message='异兽将按战术自动交战，观察站位与配合。';return true;}
 export function target(s,id){const u=s.units.find(u=>u.id===id&&u.team==='enemy'&&alive(u));if(!u||!['deploy','battle'].includes(s.phase))return false;s.selectedTarget=id;return true;}
 function attackTarget(s,u,manual=false){const fs=foes(s,u);if(!fs.length)return null;const taunt=tauntTarget(s,u,fs);if(taunt)return taunt;if(s.auto&&u.team==='ally'&&u.kind==='bird'&&s.tactics.bird==='focus'){const wolf=friends(s,u).filter(v=>v.kind==='wolf').sort((a,b)=>dist(u,a)-dist(u,b))[0];return (wolf&&attackTarget(s,wolf))||fs.sort((a,b)=>a.hp-b.hp)[0];}if(s.auto&&u.team==='ally'&&u.kind==='wolf'&&s.tactics.wolf==='guard'){const bird=friends(s,u).filter(v=>v.kind==='bird').sort((a,b)=>dist(u,a)-dist(u,b))[0];if(bird){const threat=fs.filter(v=>v.kind!=='bird'&&dist(v,bird)<300).sort((a,b)=>dist(a,bird)-dist(b,bird))[0];if(threat)return threat;}}if(u.kind!=='wolf')return fs.sort((a,b)=>dist(u,a)-dist(u,b))[0];let victim=(manual&&fs.find(x=>x.id===s.selectedTarget))||fs.filter(x=>x.kind==='bird').sort((a,b)=>dist(u,a)-dist(u,b))[0]||fs.sort((a,b)=>dist(u,a)-dist(u,b))[0];if(manual&&u.cardId==='shadow_wolf')return victim;const block=fs.find(x=>x.kind==='turtle'&&Math.abs(x.y-u.y)<65&&((u.team==='ally'&&x.x>u.x+10&&x.x<victim.x)||(u.team==='enemy'&&x.x<u.x-10&&x.x>victim.x)));return block||victim;}
 function damage(s,source,v,n){
  if(!alive(v))return;
- n*=(source.power||1)*(1+gearValue(source,'power')+mutationValue(source,'power')+(source.passive==='power'?.15:0)+(source.mutation==='ember'?.1:0));
+ n*=(source.power||1)*(1+gearValue(source,'power')+forgeValue(source,'power')+mutationValue(source,'power')+(source.passive==='power'?.15:0)+(source.mutation==='ember'?.1:0));
  if(v.passive==='armor')n*=.9;
  if(source.weak>0)n*=.8;
  if(source.team==='ally'){if(s.relics.includes('fang'))n*=1.15;if(s.synergies.includes('fire'))n*=1.15;if(s.raceSynergies?.includes('beast'))n*=1.1;if(friends(s,source).some(a=>a.passive==='rally'))n*=s.relics.includes('drum')?1.12:1.08;}
@@ -107,7 +108,7 @@ function damage(s,source,v,n){
  if(v.shield>0){stats(s,v).shieldPrevented+=n*.75;n*=.25;}
  const actual=Math.min(v.hp,n);stats(s,source).damage+=actual;stats(s,v).taken+=actual;
  if(v.kind==='bird'&&source.kind!=='bird'&&n>0)stats(s,v).backlineThreats++;
- if(alive(source))source.hp=Math.min(source.max,source.hp+actual*(gearValue(source,'leech')+(source.passive==='leech'?.15:0)));
+ if(alive(source))source.hp=Math.min(source.max,source.hp+actual*(gearValue(source,'leech')+forgeValue(source,'leech')+(source.passive==='leech'?.15:0)));
  v.hp=Math.max(0,v.hp-n);effect(s,v,`−${Math.round(actual)}`);
  if(v.passive==='thorns'&&source.kind!=='bird'&&alive(source)&&source.team!==v.team){const reflect=Math.min(source.hp,Math.max(3,actual*.18*(v.team==='ally'&&s.relics.includes('thorn')?1.35:1)));source.hp=Math.max(0,source.hp-reflect);stats(s,v).damage+=reflect;stats(s,source).taken+=reflect;effect(s,source,`反刺 −${Math.round(reflect)}`,'hit');if(source.hp===0)killUnit(s,source,v);}
  if(v.hp===0)killUnit(s,v,source);
@@ -128,14 +129,14 @@ function summonMinion(s,u,count=1,label='幼魇'){
 }
 const skillKey=(s,u)=>Object.hasOwn(s.skills,u.id)?u.id:u.kind;
 export function skill(s,id){if(s.phase!=='battle')return false;const u=s.units.find(u=>u.team==='ally'&&(u.id===id||u.kind===id)&&alive(u)&&s.skills[skillKey(s,u)]<=0&&u.stun<=0);if(!u)return false;return castSkill(s,u);}
-function castSkill(s,u,chosenTarget){const kind=u.kind,key=skillKey(s,u),friendly=u.team==='ally';const enemy=chosenTarget||attackTarget(s,u,friendly);if(!enemy)return false;stats(s,u).casts++;const cooldown=({turtle:8,bird:12,wolf:10}[kind])*(friendly&&s.relics.includes('focus')?.88:1)*(friendly&&s.synergies.includes('spirit')?.8:1)*Math.max(.45,1-gearValue(u,'haste')-mutationValue(u,'haste'))*(u.passive==='quickcast'?.85:1)*(friendly&&s.raceSynergies?.includes('feather')?.9:1);if(friendly)s.skills[key]=cooldown;else u.enemySkillCd=cooldown;
+function castSkill(s,u,chosenTarget){const kind=u.kind,key=skillKey(s,u),friendly=u.team==='ally';const enemy=chosenTarget||attackTarget(s,u,friendly);if(!enemy)return false;stats(s,u).casts++;const cooldown=({turtle:8,bird:12,wolf:10}[kind])*(friendly&&s.relics.includes('focus')?.88:1)*(friendly&&s.synergies.includes('spirit')?.8:1)*Math.max(.45,1-gearValue(u,'haste')-forgeValue(u,'haste')-mutationValue(u,'haste'))*(u.passive==='quickcast'?.85:1)*(friendly&&s.raceSynergies?.includes('feather')?.9:1);if(friendly)s.skills[key]=cooldown;else u.enemySkillCd=cooldown;
  if(u.passive==='summoner'){summonMinion(s,u,u.stars===3?2:1,'招魂幼魇');s.message='招魂鸦召来幼魇，前线多了一只可吸收伤害的小怪。';settle(s);return true;}
  if(u.passive==='team_heal'){const amount=Math.round((u.stars===3?34:24)*(friendly&&s.relics.includes('lotus')?1.2:1));for(const ally of friends(s,u)){ally.hp=Math.min(ally.max,ally.hp+amount);if(ally.hp/ally.max<.55)ally.shield=Math.max(ally.shield,1.5);effect(s,ally,`群疗 +${amount}`,'shield');}s.message='莲甲兽释放群体治疗，低血队友获得短盾。';settle(s);return true;}
  if(kind==='turtle'){for(const ally of friends(s,u)){ally.shield=(u.stars===3?3:2)+(friendly&&s.relics.includes('tide')?1:0);effect(s,ally,'水幕 · 减伤','shield');}if(u.cardId==='ice_turtle')for(const v of foes(s,u)){if(v.cast>0)stats(s,u).interrupts++;v.cast=0;v.strike=null;v.stun=Math.max(v.stun,1);effect(s,v,'寒霜 · 冻结','shield');}s.message=u.cardId==='ice_turtle'?'寒霜水幕：全队减伤，敌方冻结 1 秒。':'水幕展开：全队暂时减伤 75%。';}if(kind==='wolf'){if(enemy.cast>0)stats(s,u).interrupts++;if(enemy.kind==='turtle')stats(s,u).blockedCharges++;u.x=enemy.x+(u.team==='ally'?-42:42);u.y=enemy.y;enemy.stun=1.3;enemy.cast=0;enemy.strike=null;enemy.cooldown=Math.max(enemy.cooldown,1.8);damage(s,u,enemy,u.stars===3?50:34);if(u.passive==='curse'&&alive(enemy)){enemy.weak=Math.max(enemy.weak,2);effect(s,enemy,'虚弱','shield');}effect(s,enemy,'冲撞 · 打断','skill');s.message=enemy.kind==='turtle'?'冲撞被玄龟拦住！下局可以调整侧翼站位。':'冲撞命中，打断施法！';}if(kind==='bird'){const chosen=chosenTarget||(friendly&&s.units.find(v=>v.id===s.selectedTarget&&v.team==='enemy'&&alive(v)))||enemy;if(u.passive==='sniper'){damage(s,u,chosen,u.stars===3?62:42);effect(s,chosen,'白鹤狙击','skill');s.message='白鹤狙击命中单体目标。';}else if(u.passive==='chain'){const victims=[chosen,...foes(s,u).filter(v=>v.id!==chosen.id).sort((a,b)=>dist(a,chosen)-dist(b,chosen)).slice(0,2)];victims.forEach((v,i)=>damage(s,u,v,(u.stars===3?42:30)*(i?0.62:1)*(friendly&&s.relics.includes('storm')?1.18:1)));effect(s,chosen,'雷链弹射','skill');s.message='雷泽鸮放出雷链，伤害在敌阵中弹射。';}else{for(const v of foes(s,u))if(dist(v,chosen)<(u.stars===3?185:125))damage(s,u,v,26+(u.stars===3?12:0)+(friendly&&s.relics.includes('ember')?10:0));if(u.cardId==='ember_bird')s.zones.push({x:chosen.x,y:chosen.y,radius:u.stars===3?185:125,life:2,sourceId:u.id,type:'fire'});effect(s,chosen,'烈焰爆发','fire');s.message='烈焰命中目标附近的敌人。';}}if(!friendly)s.message=`敌方${{turtle:'玄龟展开水幕',wolf:'狰兽发动冲撞',bird:'毕方释放烈焰'}[kind]}。`;settle(s);return true;}
 function settle(s){if(s.phase!=='battle')return;if(!s.units.some(u=>u.team==='enemy'&&alive(u))){s.phase='won';s.message='获胜！你的异兽小队守住了战场。';}else if(!s.units.some(u=>u.team==='ally'&&alive(u))||s.time>=60){s.phase='lost';s.message=s.time>=60?'时间耗尽。调整站位，让狰突破后排再试。':'小队败退。查看战报，调整站位或战术再试。';}}
 export function tick(s,dt){if(s.phase!=='battle'||!Number.isFinite(dt)||dt<=0)return s;dt=Math.min(dt,.1);s.time+=dt;for(const k of Object.keys(s.skills))s.skills[k]=Math.max(0,s.skills[k]-dt);for(const e of s.effects)e.life-=dt;s.effects=s.effects.filter(e=>e.life>0).slice(-50);for(const zone of s.zones){const source=s.units.find(u=>u.id===zone.sourceId);const elapsed=Math.min(dt,zone.life);if(source)for(const v of foes(s,source))if(dist(v,zone)<zone.radius)damage(s,source,v,14*elapsed);zone.life-=dt;}s.zones=s.zones.filter(z=>z.life>0);const growNow=Math.floor((s.time-dt)/5)<Math.floor(s.time/5);
  for(const grower of growNow?s.units.filter(u=>u.team==='ally'&&alive(u)&&u.passive==='growth'):[]){const amount=Math.round((grower.stars===3?14:8)*(s.relics.includes('soil')?1.25:1));for(const ally of friends(s,grower)){ally.max=Math.min(999,ally.max+amount);ally.hp=Math.min(ally.max,ally.hp+amount);effect(s,ally,`成长 +${amount}`,'shield');}}
- for(const u of s.units){if(!alive(u))continue;u.hp=Math.min(u.max,u.hp+dt*(gearValue(u,'regen')+(u.passive==='regen'?2:0)));if(u.enemySkillCd!==undefined)u.enemySkillCd=Math.max(0,u.enemySkillCd-dt);u.shield=Math.max(0,u.shield-dt);u.cooldown=Math.max(0,u.cooldown-dt);u.stun=Math.max(0,u.stun-dt);u.weak=Math.max(0,(u.weak||0)-dt);if(u.stun>0)continue;
+ for(const u of s.units){if(!alive(u))continue;u.hp=Math.min(u.max,u.hp+dt*(gearValue(u,'regen')+forgeValue(u,'regen')+(u.passive==='regen'?2:0)));if(u.enemySkillCd!==undefined)u.enemySkillCd=Math.max(0,u.enemySkillCd-dt);u.shield=Math.max(0,u.shield-dt);u.cooldown=Math.max(0,u.cooldown-dt);u.stun=Math.max(0,u.stun-dt);u.weak=Math.max(0,(u.weak||0)-dt);if(u.stun>0)continue;
  if(s.auto&&u.team==='ally'&&u.kind==='wolf'&&s.tactics.wolf==='guard'){
   const protectedBird=friends(s,u).filter(a=>a.kind==='bird').sort((a,b)=>dist(u,a)-dist(u,b))[0];
   if(protectedBird&&!foes(s,u).some(e=>e.kind!=='bird'&&dist(e,protectedBird)<300)){
