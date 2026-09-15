@@ -89,6 +89,27 @@ export const RELICS = Object.freeze({
 });
 const tacticOptions={turtle:['reactive','sustain'],wolf:['flank','guard'],bird:['cluster','focus']};
 export const defaultTactics={turtle:'reactive',wolf:'flank',bird:'cluster'};
+export const FORGE_TRAITS=Object.freeze({
+  flame:{label:'火焰',roles:['archer','assassin'],words:['fire','flame','ember','burn','烈焰','火焰','燃烧','赤','焰']},
+  wing:{label:'翅翼',roles:['archer','summoner'],words:['wing','feather','bird','fly','翼','羽','翅','鸟','鸦']},
+  ranged:{label:'远程',roles:['archer'],words:['ranged','range','bow','sniper','caster','远程','弓','射','狙击','法器']},
+  moon:{label:'月纹',roles:['healer'],words:['moon','lunar','soft glow','月','月纹','柔光','银']},
+  heal:{label:'治愈',roles:['healer'],words:['heal','healer','cure','support','治愈','治疗','回复','保护']},
+  soul:{label:'魂契',roles:['summoner'],words:['soul','ghost','spirit','summon','魂','灵魂','召唤','幽','祭']},
+  horn:{label:'角牙',roles:['assassin'],words:['horn','fang','claw','獠牙','角','爪','牙']},
+  swift:{label:'迅捷',roles:['assassin'],words:['swift','fast','quick','speed','迅捷','快速','疾','突进']},
+  armor:{label:'厚甲',roles:['guardian'],words:['armor','shell','plate','tank','甲','壳','盾','厚甲','玄铁']},
+  mountain:{label:'山纹',roles:['guardian'],words:['mountain','rock','stone','heavy','山','岩','石','重','低重心']},
+});
+export const FORGE_QUESTS=Object.freeze([
+  {id:'flame_wing',title:'朱羽急召',wants:['flame','wing','ranged'],reward:'命中2项返2金；3项加1经验和额外词条'},
+  {id:'moon_guard',title:'月泉护阵',wants:['moon','heal','armor'],reward:'命中2项返2金；3项加1经验和额外词条'},
+  {id:'soul_brood',title:'魂巢开门',wants:['soul','wing','flame'],reward:'命中2项返2金；3项加1经验和额外词条'},
+  {id:'blood_hunt',title:'赤牙猎令',wants:['horn','swift','flame'],reward:'命中2项返2金；3项加1经验和额外词条'},
+  {id:'stone_wall',title:'山铠守门',wants:['armor','mountain','heal'],reward:'命中2项返2金；3项加1经验和额外词条'},
+]);
+export function forgeQuest(s={}){return FORGE_QUESTS[((Number(s.seed)||0)+Math.max(1,s.round||1)*7+Math.max(1,s.level||1)*13) % FORGE_QUESTS.length];}
+export function forgeQuestScore(s={},draft={}){const quest=forgeQuest(s),role=String(draft.role||''),text=`${draft.name||''} ${draft.prompt||''}`.toLowerCase();const hits=quest.wants.filter(id=>{const trait=FORGE_TRAITS[id];return trait?.roles?.includes(role)||trait?.words?.some(w=>text.includes(w.toLowerCase()));});return {quest,hits,score:hits.length,max:quest.wants.length,rewardText:hits.length>=3?'完美：返2金、经验+1、额外词条':hits.length>=2?'达成：返2金、生命+15':'未达成：只获得基础铸灵'};}
 const ids=Object.keys(CARDS), gearIds=Object.keys(GEAR), kinds=['turtle','bird','wolf'], relicIds=Object.keys(RELICS);
 export const maxShopLevel=6;
 export const maxRound=10;
@@ -194,11 +215,14 @@ const forgeProfiles=Object.freeze({
 const safeForgeName=(value,profile)=>String(value||`${profile.prefix}${profile.suffix}`).replace(/[<>\/:*?"'|]/g,'').trim().slice(0,8)||`${profile.prefix}${profile.suffix}`;
 export function forgeCreature(s,draft={}){
   if(s.phase!=='shop'||(s.mutants||[]).length>=12||s.gold<3)return s;
-  const profile=forgeProfiles[draft.role]||forgeProfiles.guardian,n=clone(s),prompt=String(draft.prompt||'').trim().replace(/\s+/g,' ').slice(0,36),link=String(draft.url||'').trim(),mutation=MUTATIONS[profile.mutation],salt=`${n.seed}_${n.round}_${n.mutants.length}_${safeForgeName(draft.name,profile)}`.toLowerCase().replace(/[^a-z0-9_]+/g,'_').slice(0,36)||'forge';
+  const profile=forgeProfiles[draft.role]||forgeProfiles.guardian,n=clone(s),prompt=String(draft.prompt||'').trim().replace(/\s+/g,' ').slice(0,36),link=String(draft.url||'').trim(),mutation=MUTATIONS[profile.mutation],match=forgeQuestScore(s,draft),salt=`${n.seed}_${n.round}_${n.mutants.length}_${safeForgeName(draft.name,profile)}`.toLowerCase().replace(/[^a-z0-9_]+/g,'_').slice(0,36)||'forge';
   let id=`mut_forge_${salt}`,i=1;while(n.mutants.some(m=>m.id===id)||Object.hasOwn(n.owned,id))id=`mut_forge_${salt}_${i++}`.slice(0,58);
-  const name=safeForgeName(draft.name,profile),sourceUrl=/^https?:\/\//.test(link)?link.slice(0,500):'',source=sourceUrl?' · 已绑定模型链接':'';
-  n.gold-=3;n.mutants=[...(n.mutants||[]),{id,name,kind:profile.kind,race:profile.race,element:profile.element,mutation:profile.mutation,passive:profile.passive,forge:profile.forge,rarity:'rare',cost:3,text:`Meshy铸灵 · ${profile.name} · ${profile.forge.name}：${profile.forge.text}${source}`,hue:Math.floor(random(n)*300),...(sourceUrl?{sourceUrl}: {})}];
-  n.owned[id]=1;n.message=`${name}已铸成${profile.name}伙伴，进入手牌区，可布阵、装备和出售。${prompt?` 灵感：${prompt}`:''}`.slice(0,500);
+  const name=safeForgeName(draft.name,profile),sourceUrl=/^https?:\/\//.test(link)?link.slice(0,500):'',source=sourceUrl?' · 已绑定模型链接':'',forge=clone(profile.forge);
+  if(match.score>=3){forge.effects.health=(forge.effects.health||0)+20;forge.effects.power=(forge.effects.power||0)+.06;forge.text+=`，悬赏完美：生命 +20，伤害 +6%`;}
+  else if(match.score>=2){forge.effects.health=(forge.effects.health||0)+15;forge.text+=`，悬赏达成：生命 +15`;}
+  n.gold-=3;if(match.score>=2)n.gold+=2;if(match.score>=3)n.xp=Math.min(40,n.xp+1);
+  n.mutants=[...(n.mutants||[]),{id,name,kind:profile.kind,race:profile.race,element:profile.element,mutation:profile.mutation,passive:profile.passive,forge,rarity:'rare',cost:3,text:`Meshy铸灵 · ${profile.name} · ${forge.name}：${forge.text} · 悬赏${match.score}/${match.max}${source}`,hue:Math.floor(random(n)*300),...(sourceUrl?{sourceUrl}: {})}];
+  n.owned[id]=1;n.message=`${name}已铸成${profile.name}伙伴。悬赏契合 ${match.score}/${match.max}，${match.rewardText}。${prompt?` 灵感：${prompt}`:''}`.slice(0,500);
   return syncHandOrder(n,s);
 }
 
