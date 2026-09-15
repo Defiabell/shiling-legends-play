@@ -134,3 +134,15 @@ index.html 已回到 expedition.mjs：每回合用金币购买伙伴、刷新商
 验证：122项 node:test 通过；Playwright 覆盖移动端布阵、进入自由阵营战、确认无手动出牌/结束回合/选目标控件、自动战斗推进、桌面/移动端截图。
 
 2026-09-15 卡面加入外露战斗数值：伙伴卡左下角显示生命、右下角显示攻击。升星、装备、商店等级和血脉让数值变大时，角标会发光，玩家可以把“堆生命 / 堆攻击”当成局内成长目标；布阵区也会汇总当前上阵总血量和总攻击，方便比较每次养成后的提升。
+## 设计文档
+
+- [Meshy 生成闭环设计](docs/meshy-integration-design.md)
+- [Meshy 生成闭环设计 · HTML 视觉版](docs/meshy-integration-design.html)
+
+## 线上试玩
+
+- Play: https://defiabell.github.io/shiling-legends-play/
+- Source: https://github.com/Defiabell/shiling-legends
+- Public build repo: https://github.com/Defiabell/shiling-legends-play
+
+发布方式参考 Nightide：源码仓保持私有，公开仓只放可运行的静态网页产物。
