@@ -202,6 +202,26 @@ export function forgeCreature(s,draft={}){
   return syncHandOrder(n,s);
 }
 
+export function recallForge(s,card={}){
+  if(s.phase!=='shop'||s.gold<4)return s;
+  const sourceUrl=String(card.sourceUrl||'').trim();
+  if(!/^https?:\/\//.test(sourceUrl))return s;
+  const existing=(s.mutants||[]).find(m=>m.sourceUrl===sourceUrl||m.id===card.id);
+  if(existing&&s.owned[existing.id]>=9)return s;
+  if(!existing&&(s.mutants||[]).length>=12)return s;
+  const n=clone(s);let id=existing?.id||String(card.id||'').toLowerCase().replace(/[^a-z0-9_]+/g,'_').slice(0,58);
+  if(!/^mut_[a-z0-9_]+$/.test(id))id=`mut_recall_${n.seed.toString(36)}_${(n.mutants||[]).length+1}`;
+  let i=1;while(!existing&&(n.mutants.some(m=>m.id===id)||Object.hasOwn(n.owned,id)))id=`mut_recall_${n.seed.toString(36)}_${i++}`.slice(0,58);
+  if(!existing){
+    const kind=kinds.includes(card.kind)?card.kind:'turtle',race=Object.hasOwn(RACES,card.race)?card.race:'spirit',element=['water','fire','spirit'].includes(card.element)?card.element:'spirit',mutation=Object.hasOwn(MUTATIONS,card.mutation)?card.mutation:'moon',passive=Object.hasOwn(PASSIVES,card.passive)?card.passive:undefined;
+    const forge=record(card.forge)&&typeof card.forge.name==='string'&&typeof card.forge.text==='string'&&record(card.forge.effects)?{name:card.forge.name.slice(0,8)||'灵契',text:card.forge.text.slice(0,80)||'召回伙伴',effects:Object.fromEntries(Object.entries(card.forge.effects).filter(([k,v])=>['health','power','haste','taunt'].includes(k)&&typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=120))}:undefined;
+    const restored={id,name:safeForgeName(card.name,{prefix:'灵',suffix:'藏'}),kind,race,element,mutation,...(passive?{passive}:{}),...(forge?{forge}:{}),rarity:card.rarity==='common'?'common':'rare',cost:int(card.cost,3,5)?card.cost:3,text:String(card.text||'灵藏召回 · 曾经铸成的 Meshy 伙伴').slice(0,180),hue:int(card.hue,0,300)?card.hue:Math.floor(random(n)*300),sourceUrl:sourceUrl.slice(0,500)};
+    n.mutants=[...(n.mutants||[]),restored];n.owned[id]=0;
+  }
+  n.gold-=4;n.owned[id]=(n.owned[id]||0)+1;reconcileFormation(s,n);n.message=`从灵藏召回${cardName(n,id)}，进入手牌区。再次召回同名伙伴可继续升星。`;
+  return syncHandOrder(n,s);
+}
+
 export function buyGear(s,index){
   const offer=s.shop?.[index]?.type==='gear'?s.shop[index]:s.gearShop?.[index];if(s.phase!=='shop'||!offer||offer.sold||!Object.hasOwn(GEAR,offer.id)||s.gold<GEAR[offer.id].cost)return s;
   const n=clone(s);n.gold-=GEAR[offer.id].cost;if(n.shop?.[index]?.type==='gear')n.shop[index].sold=true;else if(n.gearShop?.[index])n.gearShop[index].sold=true;n.gearBag.push(offer.id);n.message=`获得${GEAR[offer.id].name}，拖到阵位给异兽装备。`;return syncHandOrder(n,s);
