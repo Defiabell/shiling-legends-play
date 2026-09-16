@@ -1,0 +1,13 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {create,act,restore,paths} from './engine.mjs';
+function start(kind='eye'){return act(create(42),'start',kind)}
+test('new life offers three destinations, consumes food exactly once',()=>{let s=start();s=act(s,'visit',paths(s)[0]);assert.equal(s.food,2);assert.equal(act(s,'visit','rabbit'),s)});
+test('save rabbit spends herb and unlocks companion',()=>{let s={...start(),phase:'event',event:'rabbit'};s=act(s,'choice','save');assert.equal(s.herbs,0);assert.equal(s.companion,true);assert.equal(s.step,1)});
+test('night eye evades boss heavy strike entirely',()=>{let s=act({...start(),step:6},'boss');s.turn=2;s=act(s,'move','dodge');s=act(s,'end');assert.equal(s.hp,30);assert.equal(s.turn,3)});
+test('armor blocks and reflects damage',()=>{let s=act({...start('armor'),step:6},'boss');s=act(s,'move','guard');s=act(s,'end');assert.equal(s.hp,30);assert.equal(s.enemy.hp,35)});
+test('insufficient energy cannot attack',()=>{let s=act({...start(),step:6},'boss');s.energy=0;assert.equal(act(s,'move','ambush'),s)});
+test('three slots enforce equipment tradeoff',()=>{let s={...start(),organs:['eye','armor','tail'],bag:['claw']};assert.equal(act(s,'equip','claw'),s);s=act(s,'unequip','tail');s=act(s,'equip','claw');assert.deepEqual(s.organs,['eye','armor','claw']);assert.ok(s.bag.includes('tail'))});
+test('starvation can end journey and invalid actions do nothing',()=>{let s={...start(),food:0,hp:2};s=act(s,'visit',paths(s)[0]);assert.equal(s.phase,'lost');assert.equal(s.hp,0);assert.equal(act(s,'boss'),s)});
+test('fire burns loot',()=>{let s={...start(),phase:'event',event:'wolf',organs:['fire']};s=act(s,'choice','fight');s.enemy.hp=8;s=act(s,'move','flame');assert.equal(s.phase,'loot');assert.deepEqual(s.loot,[])});
+test('full six encounters, boss victory and chosen inheritance',()=>{let s=start();for(let i=0;i<6;i++){s=act(s,'visit',paths(s)[0]);s=act(s,'choice','leave')}assert.equal(s.step,6);s=act(s,'boss');for(let i=0;i<15&&s.phase==='battle';i++){s=act(s,'move','ambush');if(s.phase==='battle')s=act(s,'move','dodge');if(s.phase==='battle')s=act(s,'end')}assert.equal(s.phase,'won');s=act(s,'legacy','eye');assert.deepEqual(create(1,s.legacy).organs,['eye'])});
+test('battle save round trip and corrupt data rejection',()=>{const s=act({...start(),step:6},'boss');assert.deepEqual(restore(JSON.stringify(s)),s);assert.equal(restore('{bad'),null);assert.equal(restore(JSON.stringify({...s,hp:999})),null)});
+test('owned bag organs never appear as forest loot',()=>{let s={...start(),phase:'event',event:'forest',bag:['claw']};s=act(s,'choice','search');assert.ok(!s.loot.includes('claw'));assert.equal(act(s,'loot','claw'),s)});
