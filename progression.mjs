@@ -218,47 +218,47 @@ const safeForgeName=(value,profile)=>String(value||`${profile.prefix}${profile.s
 
 const fusionPools={
   turtle_bird:[
-    {name:'莲羽鼋',passive:'team_heal',mutation:'moon',kind:'turtle',effects:{health:38,haste:.08},text:'群疗护盾'},
-    {name:'云壳鸦',passive:'summoner',mutation:'wing',kind:'bird',effects:{health:30,haste:.12},text:'快速召唤'},
-    {name:'霜羽壁',passive:'deathrattle',mutation:'scale',kind:'turtle',effects:{health:58},text:'退场护盾'}
+    {name:'莲羽鼋',passive:'team_heal',mutation:'moon',kind:'turtle',effects:{health:38,haste:.08},triggers:['growth_team_hp'],text:'群疗护盾/成长加血'},
+    {name:'云壳鸦',passive:'summoner',mutation:'wing',kind:'bird',effects:{health:30,haste:.12},triggers:['kill_summon'],text:'快速召唤/击杀召唤'},
+    {name:'霜羽壁',passive:'deathrattle',mutation:'scale',kind:'turtle',effects:{health:58},triggers:['death_heal_team'],text:'退场护盾/遗言群疗'}
   ],
   turtle_wolf:[
-    {name:'吼甲狰',passive:'taunt',mutation:'scale',kind:'turtle',effects:{health:60,taunt:1},text:'嘲讽守护'},
-    {name:'棘牙鼋',passive:'thorns',mutation:'horn',kind:'turtle',effects:{health:45,power:.08},text:'反刺输出'},
-    {name:'血壳魇',passive:'leech',mutation:'scale',kind:'wolf',effects:{health:36,power:.1},text:'吸血前排'}
+    {name:'吼甲狰',passive:'taunt',mutation:'scale',kind:'turtle',effects:{health:60,taunt:1},triggers:['death_team_attack'],text:'嘲讽守护/遗言鼓舞'},
+    {name:'棘牙鼋',passive:'thorns',mutation:'horn',kind:'turtle',effects:{health:45,power:.08},triggers:['kill_grow_self'],text:'反刺输出/击杀成长'},
+    {name:'血壳魇',passive:'leech',mutation:'scale',kind:'wolf',effects:{health:36,power:.1},triggers:['kill_heal_team'],text:'吸血前排/击杀群疗'}
   ],
   bird_wolf:[
-    {name:'雷牙鸮',passive:'chain',mutation:'horn',kind:'bird',effects:{power:.13,haste:.06},text:'弹射爆发'},
-    {name:'影羽狰',passive:'sniper',mutation:'wing',kind:'bird',effects:{power:.18},text:'后排狙击'},
-    {name:'咒火狐',passive:'curse',mutation:'ember',kind:'wolf',effects:{power:.11,haste:.07},text:'持续虚弱'}
+    {name:'雷牙鸮',passive:'chain',mutation:'horn',kind:'bird',effects:{power:.13,haste:.06},triggers:['kill_team_attack'],text:'弹射爆发/击杀加攻'},
+    {name:'影羽狰',passive:'sniper',mutation:'wing',kind:'bird',effects:{power:.18},triggers:['kill_grow_self'],text:'后排狙击/击杀成长'},
+    {name:'咒火狐',passive:'curse',mutation:'ember',kind:'wolf',effects:{power:.11,haste:.07},triggers:['kill_heal_team'],text:'持续虚弱/击杀回复'}
   ],
   all:[
-    {name:'混沌灵',passive:'rally',mutation:'ember',kind:'wolf',effects:{health:55,power:.12,haste:.05},text:'鼓舞全队'},
-    {name:'万相魇',passive:'summoner',mutation:'moon',kind:'bird',effects:{health:48,haste:.12},text:'召唤压场'},
-    {name:'山海君',passive:'team_heal',mutation:'scale',kind:'turtle',effects:{health:72,power:.06},text:'治疗统率'}
+    {name:'混沌灵',passive:'rally',mutation:'ember',kind:'wolf',effects:{health:55,power:.12,haste:.05},triggers:['kill_team_attack','growth_self'],text:'鼓舞全队/击杀加攻/自身成长'},
+    {name:'万相魇',passive:'summoner',mutation:'moon',kind:'bird',effects:{health:48,haste:.12},triggers:['kill_summon','death_summon_minion'],text:'召唤压场/击杀与遗言召唤'},
+    {name:'山海君',passive:'team_heal',mutation:'scale',kind:'turtle',effects:{health:72,power:.06},triggers:['growth_team_hp','death_heal_team'],text:'治疗统率/成长与遗言群疗'}
   ],
   turtle:[
-    {name:'山甲王',passive:'thorns',mutation:'scale',kind:'turtle',effects:{health:72,taunt:1},text:'高血反刺'},
-    {name:'镇海鼋',passive:'team_heal',mutation:'moon',kind:'turtle',effects:{health:54,haste:.1},text:'守护治疗'}
+    {name:'山甲王',passive:'thorns',mutation:'scale',kind:'turtle',effects:{health:72,taunt:1},triggers:['death_team_attack'],text:'高血反刺/遗言加攻'},
+    {name:'镇海鼋',passive:'team_heal',mutation:'moon',kind:'turtle',effects:{health:54,haste:.1},triggers:['growth_team_hp'],text:'守护治疗/成长加血'}
   ],
   bird:[
-    {name:'九霄羽',passive:'sniper',mutation:'wing',kind:'bird',effects:{power:.18,haste:.08},text:'高伤狙击'},
-    {name:'雷泽羽',passive:'chain',mutation:'ember',kind:'bird',effects:{power:.12,haste:.12},text:'连锁法术'}
+    {name:'九霄羽',passive:'sniper',mutation:'wing',kind:'bird',effects:{power:.18,haste:.08},triggers:['kill_grow_self'],text:'高伤狙击/击杀成长'},
+    {name:'雷泽羽',passive:'chain',mutation:'ember',kind:'bird',effects:{power:.12,haste:.12},triggers:['kill_team_attack'],text:'连锁法术/击杀加攻'}
   ],
   wolf:[
-    {name:'赤牙王',passive:'leech',mutation:'horn',kind:'wolf',effects:{power:.16,health:28},text:'吸血追击'},
-    {name:'鼓血狰',passive:'rally',mutation:'ember',kind:'wolf',effects:{health:40,power:.1},text:'战鼓增伤'}
+    {name:'赤牙王',passive:'leech',mutation:'horn',kind:'wolf',effects:{power:.16,health:28},triggers:['kill_grow_self','kill_heal_team'],text:'吸血追击/击杀成长回血'},
+    {name:'鼓血狰',passive:'rally',mutation:'ember',kind:'wolf',effects:{health:40,power:.1},triggers:['team_attack_aura','kill_team_attack'],text:'战鼓增伤/团队光环'}
   ]
 };
 const fusionAffixes=[
-  {name:'巨躯',effects:{health:46},text:'生命+46'},
-  {name:'狂血',effects:{power:.1},text:'伤害+10%'},
-  {name:'急咒',effects:{haste:.09},text:'冷却-9%'},
-  {name:'铁壁',effects:{health:28,taunt:1},text:'生命+28/嘲讽'},
-  {name:'共鸣',effects:{health:22,power:.06},text:'生命+22/伤害+6%'},
-  {name:'生息',effects:{health:26,haste:.05},text:'生命+26/冷却-5%'},
-  {name:'破阵',effects:{power:.07,haste:.06},text:'伤害+7%/冷却-6%'},
-  {name:'龙骨',effects:{health:35,power:.04},text:'生命+35/伤害+4%'}
+  {name:'巨躯',effects:{health:46},triggers:['growth_self'],text:'生命+46/自身成长'},
+  {name:'狂血',effects:{power:.1},triggers:['kill_heal_team'],text:'伤害+10%/击杀回血'},
+  {name:'急咒',effects:{haste:.09},triggers:['kill_summon'],text:'冷却-9%/击杀召唤'},
+  {name:'铁壁',effects:{health:28,taunt:1},triggers:['death_heal_team'],text:'生命+28/嘲讽/遗言治疗'},
+  {name:'共鸣',effects:{health:22,power:.06},triggers:['team_attack_aura'],text:'生命+22/伤害+6%/团队攻击'},
+  {name:'生息',effects:{health:26,haste:.05},triggers:['growth_team_hp'],text:'生命+26/冷却-5%/团队成长'},
+  {name:'破阵',effects:{power:.07,haste:.06},triggers:['kill_team_attack'],text:'伤害+7%/冷却-6%/击杀加攻'},
+  {name:'龙骨',effects:{health:35,power:.04},triggers:['death_summon_minion'],text:'生命+35/伤害+4%/遗言召唤'}
 ];
 const countBy=(arr,key)=>arr.reduce((m,x)=>{const k=key(x);m[k]=(m[k]||0)+1;return m;},{});
 const topKey=(counts,fallback)=>Object.entries(counts).sort((a,b)=>b[1]-a[1]||String(a[0]).localeCompare(String(b[0])))[0]?.[0]||fallback;
@@ -268,16 +268,16 @@ function fusionRecipe(s,materials){
   const primary=materials[0],cards=materials.map(u=>cardOf(s,u.cardId)||CARDS[u.cardId]).filter(Boolean),kindsUnique=[...new Set(cards.map(c=>c.kind))],combo=kindsUnique.length>=3?'all':kindsUnique.length===1?kindsUnique[0]:`${kindsUnique[0]}_${kindsUnique[1]}`,pool=fusionPools[combo]||fusionPools[[...kindsUnique].reverse().join('_')]||fusionPools[primary.kind]||fusionPools.turtle,roll=fusionRolls(s,materials.map(u=>u.id));
   const archetype=pool[Math.floor(roll()*pool.length)]||pool[0],count=materials.length,starSum=materials.reduce((sum,u)=>sum+u.stars,0),gearCount=materials.reduce((sum,u)=>sum+Object.keys(s.loadouts?.[u.id]||{}).length,0),affixCount=Math.min(3,1+(count===3?1:0)+(starSum>=5||gearCount>=2?1:0)),affixes=[];
   const used=new Set();for(let i=0;i<affixCount;i++){let idx=Math.floor(roll()*fusionAffixes.length),guard=0;while(used.has(idx)&&guard++<12)idx=(idx+1)%fusionAffixes.length;used.add(idx);affixes.push(fusionAffixes[idx]);}
-  const race=topKey(countBy(cards,c=>c.race),cardOf(s,primary.cardId)?.race||'spirit'),element=topKey(countBy(cards,c=>c.element),cardOf(s,primary.cardId)?.element||'spirit'),effects=mergeEffects(archetype.effects,...affixes.map(a=>a.effects));
+  const race=topKey(countBy(cards,c=>c.race),cardOf(s,primary.cardId)?.race||'spirit'),element=topKey(countBy(cards,c=>c.element),cardOf(s,primary.cardId)?.element||'spirit'),effects=mergeEffects(archetype.effects,...affixes.map(a=>a.effects)),triggers=[...new Set([...(archetype.triggers||[]),...affixes.flatMap(a=>a.triggers||[])])].slice(0,5);
   effects.health=(effects.health||0)+(count===3?20:0)+(starSum-count)*14;
   if(count===3)effects.power=(effects.power||0)+.04;
   const name=affixes[0]?.name?`${affixes[0].name}${archetype.name}`.slice(0,8):archetype.name,source=cards.map(c=>c.name).join('＋'),text=[archetype.text,...affixes.map(a=>a.text)].join('，').slice(0,80);
-  return {primary,name,kind:archetype.kind||primary.kind,race,element,mutation:archetype.mutation,passive:archetype.passive,effects,text,source,cost:count===3?5:4,affixes:affixes.map(a=>a.name)};
+  return {primary,name,kind:archetype.kind||primary.kind,race,element,mutation:archetype.mutation,passive:archetype.passive,effects,triggers,text,source,cost:count===3?5:4,affixes:affixes.map(a=>a.name)};
 }
 export function fusionPreview(s,unitIds=[]){
   const unique=[...new Set(unitIds)],byId=Object.fromEntries(roster(s).map(u=>[u.id,u])),units=unique.map(id=>byId[id]);
   if(s.phase!=='shop'||unique.length<2||unique.length>3||units.some(u=>!u))return null;
-  const r=fusionRecipe(s,units),stars=Math.min(3,Math.max(...units.map(u=>u.stars))),card={id:'mut_preview',name:r.name,kind:r.kind,race:r.race,element:r.element,mutation:r.mutation,passive:r.passive,fusion:{name:'融合',text:r.text,effects:r.effects},rarity:'rare',cost:r.cost,text:`融合异兽 · ${r.source}`,hue:Math.floor(fusionRolls(s,[...unique,'hue'])()*300)};
+  const r=fusionRecipe(s,units),stars=Math.min(3,Math.max(...units.map(u=>u.stars))),card={id:'mut_preview',name:r.name,kind:r.kind,race:r.race,element:r.element,mutation:r.mutation,passive:r.passive,fusion:{name:'融合',text:r.text,effects:r.effects,triggers:r.triggers},rarity:'rare',cost:r.cost,text:`融合异兽 · ${r.source}`,hue:Math.floor(fusionRolls(s,[...unique,'hue'])()*300)};
   const stats=combatStats({...(s||{}),mutants:[...(s.mutants||[]),card]},card.id,stars,s.level,{});
   return {...card,stars,stats,materials:units,source:r.source,affixes:r.affixes};
 }
@@ -288,7 +288,7 @@ export function fuseUnits(s,unitIds=[]){
   let id=`mut_fuse_${salt}`,i=1;while(n.mutants.some(m=>m.id===id)||Object.hasOwn(n.owned,id))id=`mut_fuse_${salt}_${i++}`.slice(0,58);
   const selected=new Set(unique),consume={};for(const u of materials)consume[u.cardId]=(consume[u.cardId]||0)+3**(u.stars-1);
   for(const [cardId,c] of Object.entries(consume)){if((n.owned[cardId]||0)<c)return s;n.owned[cardId]-=c;}
-  const hue=Math.floor(fusionRolls(s,[...unique,'hue'])()*300),card={id,name:recipe.name,kind:recipe.kind,race:recipe.race,element:recipe.element,mutation:recipe.mutation,passive:recipe.passive,fusion:{name:'融合',text:recipe.text,effects:recipe.effects},rarity:'rare',cost:recipe.cost,text:`融合异兽 · ${recipe.source}。${recipe.text}`,hue};
+  const hue=Math.floor(fusionRolls(s,[...unique,'hue'])()*300),card={id,name:recipe.name,kind:recipe.kind,race:recipe.race,element:recipe.element,mutation:recipe.mutation,passive:recipe.passive,fusion:{name:'融合',text:recipe.text,effects:recipe.effects,triggers:recipe.triggers},rarity:'rare',cost:recipe.cost,text:`融合异兽 · ${recipe.source}。${recipe.text}`,hue};
   n.seed=(Math.imul(n.seed,1664525)+1013904223)>>>0;n.mutants=[...(n.mutants||[]),card];n.owned[id]=1;
   const after=roster(n),queues=new Map();for(const u of after){const k=`${u.cardId}:${u.stars}`;(queues.get(k)||queues.set(k,[]).get(k)).push(u.id);}const oldToNew={};
   for(const u of before){if(selected.has(u.id))continue;const k=`${u.cardId}:${u.stars}`,nextId=queues.get(k)?.shift();if(nextId)oldToNew[u.id]=nextId;}
@@ -415,7 +415,7 @@ export function restore(raw){
     if(!record(s)||s.version!==1||!int(s.seed,0,4294967295)||!['shop','battle','reward','won','lost'].includes(s.phase)||!int(s.round,1,maxRound)||!int(s.gold,0,250)||!int(s.level,1,maxShopLevel)||!int(s.xp,0,40)||!int(s.lives,0,3)||!int(s.wins,0,maxRound)||typeof s.message!=='string'||s.message.length>500)return null;
     if(s.mutants===undefined)s.mutants=[];if(s.pendingEggs===undefined)s.pendingEggs=[];if(s.handOrder===undefined)s.handOrder=[];
     if(!Array.isArray(s.pendingEggs)||s.pendingEggs.length>12||s.pendingEggs.some(e=>!exactKeys(e,['tier','readyRound'])||!int(e.tier,2,maxShopLevel)||!int(e.readyRound,2,maxRound)))return null;if(!Array.isArray(s.handOrder)||s.handOrder.length>300||s.handOrder.some(k=>typeof k!=='string'||k.length>80))return null;
-    if(!Array.isArray(s.mutants)||s.mutants.length>12||s.mutants.some(m=>!record(m)||typeof m.id!=='string'||!/^mut_[a-z0-9_]+$/.test(m.id)||typeof m.name!=='string'||m.name.length<1||m.name.length>8||!kinds.includes(m.kind)||!Object.hasOwn(RACES,m.race)||!['water','fire','spirit'].includes(m.element)||!Object.hasOwn(MUTATIONS,m.mutation)||(m.passive!==undefined&&!Object.hasOwn(PASSIVES,m.passive))||(m.sourceUrl!==undefined&&(typeof m.sourceUrl!=='string'||m.sourceUrl.length>500||!/^https?:\/\//.test(m.sourceUrl)))||(m.forge!==undefined&&(!record(m.forge)||typeof m.forge.name!=='string'||m.forge.name.length<1||m.forge.name.length>8||typeof m.forge.text!=='string'||m.forge.text.length<1||m.forge.text.length>80||!record(m.forge.effects)||Object.entries(m.forge.effects).some(([k,v])=>!['health','power','haste','taunt'].includes(k)||typeof v!=='number'||!Number.isFinite(v)||v<0||v>(k==='health'?220:120))))||(m.fusion!==undefined&&(!record(m.fusion)||typeof m.fusion.name!=='string'||m.fusion.name.length<1||m.fusion.name.length>8||typeof m.fusion.text!=='string'||m.fusion.text.length<1||m.fusion.text.length>80||!record(m.fusion.effects)||Object.entries(m.fusion.effects).some(([k,v])=>!['health','power','haste','taunt'].includes(k)||typeof v!=='number'||!Number.isFinite(v)||v<0||v>(k==='health'?220:120))))||!['common','rare'].includes(m.rarity)||!int(m.cost,3,5)||typeof m.text!=='string'||!int(m.hue,0,300)))return null;
+    if(!Array.isArray(s.mutants)||s.mutants.length>12||s.mutants.some(m=>!record(m)||typeof m.id!=='string'||!/^mut_[a-z0-9_]+$/.test(m.id)||typeof m.name!=='string'||m.name.length<1||m.name.length>8||!kinds.includes(m.kind)||!Object.hasOwn(RACES,m.race)||!['water','fire','spirit'].includes(m.element)||!Object.hasOwn(MUTATIONS,m.mutation)||(m.passive!==undefined&&!Object.hasOwn(PASSIVES,m.passive))||(m.sourceUrl!==undefined&&(typeof m.sourceUrl!=='string'||m.sourceUrl.length>500||!/^https?:\/\//.test(m.sourceUrl)))||(m.forge!==undefined&&(!record(m.forge)||typeof m.forge.name!=='string'||m.forge.name.length<1||m.forge.name.length>8||typeof m.forge.text!=='string'||m.forge.text.length<1||m.forge.text.length>80||!record(m.forge.effects)||Object.entries(m.forge.effects).some(([k,v])=>!['health','power','haste','taunt'].includes(k)||typeof v!=='number'||!Number.isFinite(v)||v<0||v>(k==='health'?220:120))))||(m.fusion!==undefined&&(!record(m.fusion)||typeof m.fusion.name!=='string'||m.fusion.name.length<1||m.fusion.name.length>8||typeof m.fusion.text!=='string'||m.fusion.text.length<1||m.fusion.text.length>100||!record(m.fusion.effects)||Object.entries(m.fusion.effects).some(([k,v])=>!['health','power','haste','taunt'].includes(k)||typeof v!=='number'||!Number.isFinite(v)||v<0||v>(k==='health'?220:120))||(m.fusion.triggers!==undefined&&(!Array.isArray(m.fusion.triggers)||m.fusion.triggers.length>5||m.fusion.triggers.some(t=>!['kill_summon','kill_grow_self','kill_heal_team','kill_team_attack','death_summon_minion','death_heal_team','death_team_attack','growth_self','growth_team_hp','team_attack_aura'].includes(t))))))||!['common','rare'].includes(m.rarity)||!int(m.cost,3,5)||typeof m.text!=='string'||!int(m.hue,0,300)))return null;
     const mutantIds=new Set(s.mutants.map(m=>m.id));if(mutantIds.size!==s.mutants.length)return null;
     if(!record(s.owned)||Object.keys(s.owned).some(id=>!Object.hasOwn(CARDS,id)&&!mutantIds.has(id))||ids.slice(0,6).some(id=>!Object.hasOwn(s.owned,id)))return null;
     for(const id of ids)if(!Object.hasOwn(s.owned,id))s.owned[id]=0;for(const id of mutantIds)if(!Object.hasOwn(s.owned,id))s.owned[id]=0;
